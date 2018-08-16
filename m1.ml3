@@ -1,0 +1,51 @@
+Migrant(
+
+);
+
+Location(
+
+);
+
+Information(
+  trust : real;
+);
+
+// k1 - information spreading speed
+// k2 - information trust decay
+// k3 - learning about location speed
+
+// migrant learns a new bit of information
+// if it is less trusted than previous informaton about the same thing, it is discarded
+Migrant.learn(?news : Information) ->
+  if (?maybePrev.size() > 0)
+    if (k2 * ?news.trust > ?prev.trust)
+      ego.knowledge -= ?prev,
+      new Information(trust = k2 * ?news.trust, subject = ?news.subject, owner = ego)
+    end
+  end
+where ?maybePrev := ego.knowledge.filter(alter.subject = ?news.subject),
+      ?prev = ?maybePrev.only();
+
+contacts:Migrant[0-]<->[0-]Migrant:contacts;
+owner:Migrant[0-]<->[0-]Information:knowledge;
+location:Location[1]<->[0-]Migrant:migrants;
+subject:Location[1]<->[0-]Information:information;
+
+// picking up rumors/news/... spawning bits of information
+
+// learning about the current location
+Migrant
+  @ k3
+  -> new Information(subject = ego.location, trust = 1, owner = ego);
+
+// information spreading from contacts
+Migrant
+  @ k1 * ego.contacts.sum(alter.knowledge)
+  -> ego.learn(ego.contacts.random().knowledge.random());
+
+// making contacts with people at the same location
+Migrant
+  @ k4 * (ego.location.migrants.size() - 1)
+  -> ego.contacts += (ego.location.migrants - [ego]).random();
+
+// moving around

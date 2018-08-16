@@ -1,0 +1,9 @@
+/target/
+
+# eclipse
+.project
+.classpath
+.settings/*
+
+# intellij
+.idea/
