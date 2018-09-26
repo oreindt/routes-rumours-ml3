@@ -1,51 +1,136 @@
 Migrant(
-
+  capital : real,
+  knowledge : {Information}
 );
 
 Location(
-
+  x : int,
+  y : int,
+  opaqueness : real,
+  friction : real,
+  control : real,
+  resources : [real]
 );
 
-Information(
-  trust : real;
+type Information(
+  x : int,
+  y : int,
+  friction : real,
+  control : real,
+  resources : [real],
+  friction_trust : real,
+  control_trust : real,
+  resources_trust : [real],
+  experience : real
 );
 
-// k1 - information spreading speed
-// k2 - information trust decay
-// k3 - learning about location speed
-
-// migrant learns a new bit of information
-// if it is less trusted than previous informaton about the same thing, it is discarded
-Migrant.learn(?news : Information) ->
-  if (?maybePrev.size() > 0)
-    if (k2 * ?news.trust > ?prev.trust)
-      ego.knowledge -= ?prev,
-      new Information(trust = k2 * ?news.trust, subject = ?news.subject, owner = ego)
-    end
-  end
-where ?maybePrev := ego.knowledge.filter(alter.subject = ?news.subject),
-      ?prev = ?maybePrev.only();
+singleton World();
 
 contacts:Migrant[0-]<->[0-]Migrant:contacts;
-owner:Migrant[0-]<->[0-]Information:knowledge;
 location:Location[1]<->[0-]Migrant:migrants;
-subject:Location[1]<->[0-]Information:information;
+neighbor:Location[0-]<->[0-]Location:neighbors;
 
-// picking up rumors/news/... spawning bits of information
+weight_friction	 := 0.3;
+weight_control	 := 0.8;
+weight_info		 := 0.3;
+weight_resources := 0.5;
 
-// learning about the current location
+n_ini_contacts	 := 10;
+ini_capital 	 := 500.0;
+costs_stay		 := 1.0;
+ben_resources	 := 5.0;
+costs_move		 := 5.0;
+
+p_keep_contact 	 := 0.3;
+p_info_mingle	 := 0.3;
+p_info_contacts	 := 0.2;
+p_transfer_info	 := 0.3;
+
+
+// (== knows here)
+Migrant.knows_here() : Information :=
+  if (!?infos.isEmpty()) then ?infos.only() else ?newInfo // TODO: create and initialize new info
+where ?infos := ego.knowledge.filter(alter.x = ?loc.x && alter.y = ?loc.y).only(),
+      ?loc := ego.location;
+
+/*
+ * ACTIVITIES WHILE STAYING
+ */
+// (== exchange_info)
+Migrant.exchange_info(?other : Migrant) ->
+  ?egoExclusive := ego.knowledge.filter(!?other.knows_about(alter)),
+  ?otherExclusive := ?other.knowledge.filter(!ego.knows_about(alter)),
+  ?egoCommon := ego.knowledge - ?ego.egoExclusive,
+  ?otherCommon := ?other.knowledge - ?otherExclusive;
+
+// (== costs_stay)
 Migrant
-  @ k3
-  -> new Information(subject = ego.location, trust = 1, owner = ego);
+  | true
+  @ 1
+  -> ego.capital -= costs_stay;
+     // add the costs to resources
 
-// information spreading from contacts
+// (== explore)
 Migrant
-  @ k1 * ego.contacts.sum(alter.knowledge)
-  -> ego.learn(ego.contacts.random().knowledge.random());
+ | true
+ @ 1
+ -> ?k.experience += ?k.experience + (1.0 - ?k.experience) * (1.0 - ?loc.opaqueness)
+    // TODO: update trust and values
+ where ?loc := ego.location,
+       ?k := ego.knows_here();
 
-// making contacts with people at the same location
+// (== mingle)
+// mingle with a single person, not with everyone as in the .jl
 Migrant
-  @ k4 * (ego.location.migrants.size() - 1)
-  -> ego.contacts += (ego.location.migrants - [ego]).random();
+  | true
+  @ ?people.size()
+  -> ?other := ?people.random(),
+     ego.exchange_info(?other),
+     if random() < keep_contact then
+       ego.contacts += ?other
+     end
+where ?people := ego.location.migrants - ego;
 
-// moving around
+// (== step_agent_info)
+Migrant
+  | true
+  @ ego.contacts.size() * p_info_contacts
+  ->
+/*
+ * MOVING AROUND
+ */
+// (== 1 - decide_move)
+Migrant.move_rate() : real := 0.5;
+
+// (== decide_move)
+Migrant.decide_move_target() : Location :=
+  ego.location.neighbors.argMax(ego.quality(alter));
+
+// (== quality)
+Migrant.quality(?loc : Location) : real :=
+  if ?infos.isEmpty() then ?closeness + random() * 0.1
+  else ?closeness + ?friction + ?control // TODO: + the weighted resources
+where ?infos := ego.knowledge.filter(alter.x = ?loc.x && alter.y = ?loc.y).only(),
+      ?info := ?infos.only(),
+      ?closeness := ?loc.x / 2000,
+      ?friction := ?info.friction * weight_friction,
+      ?control := ?info.control * weight_control;
+
+// (== costs_move)
+Migrant.moveCost(?target : Location) : real :=
+  costs_move * ?target.friction;
+
+Migrant
+  | ego.capital >= 0
+  @ ego.move_rate()
+  -> ?target := ego.decide_move_target(),
+     ego.capital -= Migrant.move_cost(?target),
+     ego.location := ?target,
+     if ego.location.x >= max_x then ego.die() end;
+
+
+World
+  | true
+  @ departure_rate
+  -> ?migrant := new Migrant(capital := ini_capital),
+     ?migrant.location := Location.all.filter(alter.x = 0).random(); // TODO inital contacts
