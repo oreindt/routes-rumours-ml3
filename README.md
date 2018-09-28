@@ -1,4 +1,8 @@
+# ML3 Version of the Routes Romours Model #
+see https://github.com/mhinsch/RoutesRumours
+
 # SESSL/ML3 Quick Start #
+see https://git.informatik.uni-rostock.de/mosi/sessl-ml3-quickstart
 
 In this repository you find a number of files to quickly get started with simulation experiments with SESSL and ML3.
 You do not need to install any additional software, as all required artifacts are downloaded 
