@@ -1,4 +1,4 @@
-# ML3 Version of the Routes Romours Model #
+# ML3 Version of the Routes Rumours Model #
 see https://github.com/mhinsch/RoutesRumours
 
 # SESSL/ML3 Quick Start #
