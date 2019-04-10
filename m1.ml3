@@ -3,8 +3,8 @@ Migrant(
 )
 
 Location(
-  x : int,
-  y : int,
+  x : real,
+  y : real,
   type : {"std", "entry", "exit"},
   quality : real,
   resources
@@ -20,7 +20,7 @@ Information(
 singleton World()
 
 location:Location[1]<->[n]Migrant:migrants // migrants to locations
-neighbor:Location[n]<->[n]Location:neighbors // location neighborhood
+neighbors:Location[n]<->[n]Location:neighbors // location neighborhood
 knowledge:Information[n]<->[1]Migrant:owner // migrants to their knowledge
 subject:Location[1]<->[n]Information:information // pieces of information to the subject location
 contacts:Migrant[n]<->[n]Migrant:contacts // contact network
