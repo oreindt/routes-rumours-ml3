@@ -1,74 +1,69 @@
 Migrant(
   capital : real
-);
+)
 
 Location(
   x : int,
   y : int,
-  opaqueness : real,
-  friction : real,
-  control : real,
-  resources : real
-);
+  type : {"std", "entry", "exit"},
+  quality : real,
+  resources
+)
 
 Information(
-  friction : real,
-  control : real,
-  resources : real, // TODO: multiple resources
-  friction_trust : real,
-  control_trust : real,
-  resources_trust : real,
-  experience : real
-);
+  quality : real,
+  resources : real,
+  quality_trust : real,
+  resources_trust : real
+)
 
-singleton World();
+singleton World()
 
-location:Location[1]<->[n]Migrant:migrants; // migrants to locations
-neighbor:Location[n]<->[n]Location:neighbors; // location neighborhood
-knowledge:Information[n]<->[1]Migrant:owner; // migrants to their knowledge
-subject:Location[1]<->[n]Information:information; // pieces of information to the subject location
-contacts:Migrant[n]<->[n]Migrant:contacts; // contact network
+location:Location[1]<->[n]Migrant:migrants // migrants to locations
+neighbor:Location[n]<->[n]Location:neighbors // location neighborhood
+knowledge:Information[n]<->[1]Migrant:owner // migrants to their knowledge
+subject:Location[1]<->[n]Information:information // pieces of information to the subject location
+contacts:Migrant[n]<->[n]Migrant:contacts // contact network
 
-weight_friction	 := 0.3;
-weight_control	 := 0.8;
-weight_info		 := 0.3;
-weight_resources := 0.5;
+weight_friction	 := 0.3
+weight_control	 := 0.8
+weight_info		 := 0.3
+weight_resources := 0.5
 
-n_ini_contacts	 := 10;
-ini_capital 	 := 500.0;
-costs_stay		 := 1.0;
-ben_resources	 := 5.0;
-costs_move		 := 5.0;
+n_ini_contacts	 := 10
+ini_capital 	 := 500.0
+costs_stay		 := 1.0
+ben_resources	 := 5.0
+costs_move		 := 5.0
 
-p_keep_contact 	 := 0.3;
-p_info_mingle	 := 0.3;
-p_info_contacts	 := 0.2;
-p_transfer_info	 := 0.3;
+p_keep_contact 	 := 0.3
+p_info_mingle	 := 0.3
+p_info_contacts	 := 0.2
+p_transfer_info	 := 0.3
 
 
-Migrant.knows(?loc : Location) :=
-  ego.knowledge.filter(alter.subject = ?loc).size() >= 1;
+Migrant.knows(?loc : Location) : bool :=
+  ego.knowledge.filter(alter.subject = ?loc).size() >= 1
 
 // error, if they don't know the location
 Migrant.knowledge_about(?loc : Location) : Information :=
-  ego.knowledge.filter(alter.subject = ?loc).only(),
+  ego.knowledge.filter(alter.subject = ?loc).only()
 
 /*
  * ACTIVITIES WHILE STAYING
  */
 // (== exchange_info)
 Migrant.exchange_info(?other : Migrant) ->
-  ?egoExclusive := ego.knowledge.filter(!?other.knows(alter.subject)),
-  ?otherExclusive := ?other.knowledge.filter(!ego.knows(alter.subject)),
-  ?egoCommon := ego.knowledge - ?ego.egoExclusive,
-  ?otherCommon := ?other.knowledge - ?otherExclusive; // TODO: actual information exchange
+  ?egoExclusive := ego.knowledge.filter(!?other.knows(alter.subject))
+  ?otherExclusive := ?other.knowledge.filter(!ego.knows(alter.subject))
+  ?egoCommon := ego.knowledge - ?ego.egoExclusive
+  ?otherCommon := ?other.knowledge - ?otherExclusive // TODO: actual information exchange
 
 // (== costs_stay)
 Migrant
   | true
   @ 1 // TODO: rate
-  -> ego.capital -= costs_stay,
-     ego.location.resources += ben_resources;
+  -> ego.capital += ben_resources * ego.location.resources - costs_stay
 
 // (== explore)
 Migrant
@@ -79,30 +74,30 @@ Migrant
     else
       ?k := new Information(subject := ego.location, owner := ego) // TODO: initialization
     end,
-    ?k.experience += (1.0 - ?k.experience) * (1.0 - ego.location.opaqueness),
-    ?k.friction += (ego.location.friction - ?k.friction) * ?k.experience,
-    ?k.control += (ego.location.control - ?k.control) * ?k.experience,
-    ?k.resources += (ego.location.resources - ?k.resources) * ?k.experience,
-    ?k.friction_trust += (1.0 - ?k.friction_trust) * ?k.experience,
-    ?k.control_trust += (1.0 - ?k.control_trust) * ?k.experience,
-    ?k.resources_trust += (1.0 - ?k.resources_trust) * ?k.experience;
+    ?k.experience += (1.0 - ?k.experience) * (1.0 - ego.location.opaqueness)
+    ?k.friction += (ego.location.friction - ?k.friction) * ?k.experience
+    ?k.control += (ego.location.control - ?k.control) * ?k.experience
+    ?k.resources += (ego.location.resources - ?k.resources) * ?k.experience
+    ?k.friction_trust += (1.0 - ?k.friction_trust) * ?k.experience
+    ?k.control_trust += (1.0 - ?k.control_trust) * ?k.experience
+    ?k.resources_trust += (1.0 - ?k.resources_trust) * ?k.experience
 
 // (== mingle)
 // the making contact part of mingle
 Migrant
   | true
   @ ?people.size() * p_keep_contact
-  -> ?other := ?people.random(),
+  -> ?other := ?people.random()
      ego.contacts += ?other
-where ?people := ego.location.migrants - ego;
+where ?people := ego.location.migrants - ego
 
 // the exchanging info part of mingle
 Migrant
   | true
   @ ?people.size() * p_info_mingle
-  -> ?other := ?people.random(),
+  -> ?other := ?people.random()
      ego.exchange_info(?other)
-where ?people := ego.location.migrants - ego;
+where ?people := ego.location.migrants - ego
 
 // (== step_agent_info)
 // .jl implementation is empty
@@ -114,39 +109,37 @@ where ?people := ego.location.migrants - ego;
 /*
  * MOVING AROUND
  */
-// (== 1 - decide_move)
-Migrant.move_rate() : real := 0.5;
+Migrant.move_rate() : real := 0.5
 
 // (== decide_move)
 Migrant.decide_move_target() : Location :=
-  ego.location.neighbors.argMax(ego.quality(alter));
+  ego.location.neighbors.argMax(ego.quality(alter))
 
 // (== quality)
 Migrant.quality(?loc : Location) : real :=
-  if ?infos.isEmpty() then ?closeness + random() * 0.1
-  else ?closeness + ?friction + ?control + ?resources
-where ?infos := ego.knowledge.filter(alter.subject = ego.location),
-      ?info := ?infos.only(),
-      ?closeness := ?loc.x / 2000,
-      ?friction := ?info.friction * weight_friction,
-      ?control := ?info.control * weight_control,
-      ?resources := ?info.resources * weight_resources;
+  if ?infos.isEmpty() then ?closeness + random() * 0.1 // TODO: what shall happen, when there is no knowledge
+  else ?quality + ?position + ?resources
+where ?infos := ego.knowledge.filter(alter.subject = ego.location)
+      ?info := ?infos.only()
+      ?quality := ?info.quality * ?info.quality_trust
+      ?closeness := ?loc.x * qual_weight_x
+      ?resources := ?info.resources * ?info.resources_trust * qual_weight_res
 
 // (== costs_move)
 Migrant.moveCost(?target : Location) : real :=
-  costs_move * ?target.friction;
+  costs_move * ?target.friction
 
 Migrant
   | ego.capital >= 0
   @ ego.move_rate()
-  -> ?target := ego.decide_move_target(),
-     ego.capital -= Migrant.move_cost(?target),
-     ego.location := ?target,
-     if ego.location.x >= max_x then ego.die() end; // arrival
+  -> ?target := ego.decide_move_target()
+     ego.capital -= Migrant.move_cost(?target)
+     ego.location := ?target
+     if ego.location.type = "exit" then ego.die() end // arrival
 
 // (== handle_departures)
 World
   | true
   @ departure_rate
-  -> ?migrant := new Migrant(capital := ini_capital),
-     ?migrant.location := Location.all.filter(alter.x = 0).random(); // TODO inital contacts
+  -> ?migrant := new Migrant(capital := ini_capital)
+     ?migrant.location := Location.all.filter(alter.type = "entry").random() // TODO initial contacts, knowledge

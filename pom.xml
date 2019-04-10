@@ -4,7 +4,7 @@
 	<name>SESSL Example Project</name>
 	<groupId>org.sessl</groupId>
 	<artifactId>sessl-quickstart</artifactId>
-	<version>0.17</version>
+	<version>0.20</version>
 
 	<properties>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
@@ -26,7 +26,7 @@
 		<dependency>
 			<groupId>org.jamesii</groupId>
 			<artifactId>ml3</artifactId>
-			<version>0.1.5</version>
+			<version>0.2.2</version>
 		</dependency>
 	</dependencies>
 
