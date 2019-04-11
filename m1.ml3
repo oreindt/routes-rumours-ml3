@@ -17,10 +17,16 @@ Information(
   resources_trust : real
 )
 
+Link(
+  type : {"slow", "fast"},
+  friction : real,
+  distance : real
+)
+
 singleton World()
 
 location:Location[1]<->[n]Migrant:migrants // migrants to locations
-neighbors:Location[n]<->[n]Location:neighbors // location neighborhood
+links:Link[n]<->[n]Location:endpoints // location to the link object to another location
 knowledge:Information[n]<->[1]Migrant:owner // migrants to their knowledge
 subject:Location[1]<->[n]Information:information // pieces of information to the subject location
 contacts:Migrant[n]<->[n]Migrant:contacts // contact network
@@ -41,6 +47,9 @@ p_info_mingle	 := 0.3
 p_info_contacts	 := 0.2
 p_transfer_info	 := 0.3
 
+
+Link.other_side(?loc : Location) : Location :=
+  ego.endpoints.filter(?loc != alter).only()
 
 Migrant.knows(?loc : Location) : bool :=
   ego.knowledge.filter(alter.subject = ?loc).size() >= 1
@@ -73,7 +82,7 @@ Migrant
       ?k := ego.knowledge_about(ego.location)
     else
       ?k := new Information(subject := ego.location, owner := ego) // TODO: initialization
-    end,
+    end, // TODO: this changed
     ?k.experience += (1.0 - ?k.experience) * (1.0 - ego.location.opaqueness)
     ?k.friction += (ego.location.friction - ?k.friction) * ?k.experience
     ?k.control += (ego.location.control - ?k.control) * ?k.experience
@@ -113,7 +122,7 @@ Migrant.move_rate() : real := 0.5
 
 // (== decide_move)
 Migrant.decide_move_target() : Location :=
-  ego.location.neighbors.argMax(ego.quality(alter))
+  (ego.location.links.collect(alter.endpoints) - ego.location).argMax(ego.quality(alter))
 
 // (== quality)
 Migrant.quality(?loc : Location) : real :=
