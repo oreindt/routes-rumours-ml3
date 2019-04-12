@@ -67,16 +67,73 @@ Migrant.knowledge_about(?loc : Location) : Information :=
 Migrant.exchange_info(?other : Migrant) ->
   ?egoExclusive := ego.knowledge.filter(!?other.knows(alter.subject))
   ?otherExclusive := ?other.knowledge.filter(!ego.knows(alter.subject))
-  ?egoCommon := ego.knowledge - ?ego.egoExclusive
-  ?otherCommon := ?other.knowledge - ?otherExclusive
-  ?arrived := ?other.location.type = "exit"
-  ?convince := if (?arrived) then convince^(1 / weight_arr) else convince
-  ?convert := if (?arrived) then convert^(1 / weight_arr) else convince
-  ?confuse := convince
-  ?error := error
-  // TODO: the actual exchange ...
+  ?otherArrived := ?other.location.type = "exit"
+  // ego discover's the places other knows
+  for ?info in ?otherExclusive do
+    ego.discover_location(?info.subject)
+  end
+  // other discovers the places ego knows
+  if (!?otherArrived) then
+    for ?info in ?egoExclusive do
+      ?other.discover_location(?info.subject)
+    end
+  end
+  // exchange knowledge about the places both know now
+  for ?info in ego.knowledge.filter(?other.knows(alter.subject)) do
+    ?otherInfo := ?other.knowledge.filter(?info.subject = alter.subject).only()
+    ego.exchange_beliefs(?info, ?otherInfo, ?otherArrived)
+  end
+  // TODO: link knowledge
 
-Migrant.discover(?loc : Location) ->
+ego.exchange_beliefs(?i1 : Information, ?i2 : Information, ?arrived : bool) ->
+  // agent 1 evaluated the information differently, if agent 2 has already arrived (agent 1 definitely did not arrive yet)
+  ?convince1 := if (?otherArrived) then convince^(1 / weight_arr) else convince
+  ?convert1 := if (?otherArrived) then convert^(1 / weight_arr) else convince
+  ?confuse1 := convince
+  ?v1_q := receive_value(?i1.quality, ?i1.quality_trust, ?i2.quality, ?i2.quality_trust, ?convince1, ?convert1, ?confuse1)
+  ?v1_r := receive_value(?i1.resources, ?i1.resources_trust, ?i2.resources_trust, ?i2.resources_trust, ?convince1, ?convert1, ?confuse1)
+  ?d1_q := receive_doubt(?i1.quality, ?i1.quality_trust, ?i2.quality, ?i2.quality_trust, ?convince1, ?convert1, ?confuse1)
+  ?d1_r := receive_doubt(?i1.resources, ?i1.resources_trust, ?i2.resources_trust, ?i2.resources_trust, ?convince1, ?convert1, ?confuse1)
+  ?i1.quality := ?v1_q / (1 - ?d1_q)
+  ?i1.quality_trust := 1 - ?d1_q
+  ?i1.resources := ?v1_q / (1 - ?d1_q)
+  ?i1.resources_trust := 1 - ?d1_q
+  // agent 2 does not update their knowledge, if they have arrived
+  if (!?arrived) then
+    ?v2_q := receive_value(?i2.quality, ?i2.quality_trust, ?i1.quality, ?i1.quality_trust, convince, convert, confuse)
+    ?v2_r := receive_value(?i2.resources, ?i2.resources_trust, ?i1.resources_trust, ?i1.resources_trust, convince, convert, confuse)
+    ?d2_q := receive_doubt(?i2.quality, ?i2.quality_trust, ?i1.quality, ?i1.quality_trust, convince, convert, confuse)
+    ?d2_r := receive_doubt(?i2.resources, ?i2.resources_trust, ?i1.resources_trust, ?i1.resources_trust, convince, convert, confuse)
+    ?i2.quality := ?v2_q / (1 - ?d2_q)
+    ?i2.quality_trust := 1 - ?d2_q
+    ?i2.resources := ?v2_q / (1 - ?d2_q)
+    ?i2.resources_trust := 1 - ?d2_q
+  end
+
+Migrant.receive_value(?v1 : real, ?t1 : real, ?v2 : real, ?t2 : real, ?ci : real, ?ce : real, ?cu : real) real :=
+  ?t * ?d_pcv * ?v + ?d * ?t_pcv * ?ci * ?v_pcv + ?t * ?t_pcv * (1.0 - ?cu * ?dist_pcv) * ((1.0 - ?ce) * v + ?ce * ?v_pcv)
+where ?t := ?t1
+      ?d := 1 - ?t
+      ?v := ?v1
+      ?t_pcv := ego.limit(0.000001, ?t2 + ego.unf_delta(error), 0.99999)
+      ?d_pcv := 1.0 - ?t_pcv
+      ?v_pcv := ego.max(0.0, ?v2 + ego.unf_delta(error))
+      ?dist_pcv := abs(?v-?v_pcv) / (?v + ?v_pcv + 0.00001)
+
+Migrant.receive_doubt(?v1 : real, ?t1 : real, ?v2 : real, ?t2 : real, ?ci : real, ?ce : real, ?cu : real) real :=
+  ?d * ?d_pcv + ?d * ?t_pcv * (1.0 - ?ci) + ?t * ?t_pcv * ?cu * ?dist_pcv
+where ?t := ?t1
+      ?d := 1 - ?t
+      ?v := ?v1
+      ?t_pcv := ego.limit(0.000001, ?t2 + ego.unf_delta(error), 0.99999)
+      ?d_pcv := 1.0 - ?t_pcv
+      ?v_pcv := ego.max(0.0, ?v2 + ego.unf_delta(error))
+      ?dist_pcv := abs(?v-?v_pcv) / (?v + ?v_pcv + 0.00001)
+
+Migrant.unf_delta(?x : real) : real := random() * 2 * x - x
+Migrant.limit(?mi : real, ?v : real, ?ma : real) := min(?ma, max(?v, ?mi))
+
+Migrant.discover_location(?loc : Location) ->
   ?k := new Information()
   ?k.owner := ego
   ?k.subject := ?loc
@@ -102,7 +159,7 @@ Migrant.explore_at(?loc : Location, ?speed : real) ->
   if (ego.knows(ego.location)) then
     ?k := ego.knowledge_about(ego.location)
   else
-    ego.discover(?loc)
+    ego.discover_location(?loc)
     ?k := ego.knowledge_about(ego.location)
   end
   ?k.quality := ego.weighted_average(?k.quality, ego.location.quality, ?speed)
