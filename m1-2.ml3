@@ -41,18 +41,7 @@ subject:Location[1]<->[n]Information:information // pieces of information to the
 subject:Link[1]<->[n]InfoLink:information // pieces of information to the subject link
 contacts:Migrant[n]<->[n]Migrant:contacts // contact network
 
-n_cities		: int	:= 300 // number of cities
-link_thresh		: real	:= 0.1 // maximum distance for link generation
 rate_dep	 	: real	:= 10 // 20 // number of departures per time step
-n_exits			: int	:= 10
-n_entries		: int	:= 3 // number of starting positions
-exit_dist		: real	:= 0.5
-entry_dist		: real	:= 0.1
-qual_entry		: real	:= 0.0
-res_entry		: real	:= 0.0
-qual_exit		: real	:= 1
-res_exit		: real	:= 1
-
 
 dist_scale_slow : real	:= 10.0 // scale >= 1.0 required, otherwise path finding breaks
 dist_scale_fast : real  := 1.0
