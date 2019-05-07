@@ -12,13 +12,13 @@ object ExitDistribution extends App {
       model = "m1-2.ml3"
       simulator = NextReactionMethod()
       parallelThreads = -1
-      replications = 1 // 10
+      replications = 10 // 10
       startTime = 0
       stopTime = 100 // 500
 
       initializeWith(() => new JsonStateBuilder("init50.json"))
 
-/*
+
       scan("p_find_links" <~ (0.1,0.5,1.0)
         and "p_find_dests" <~ (0.1,0.3,1.0)
         and "speed_expl_stay" <~ (0.3,0.5,1.0)
@@ -27,7 +27,7 @@ object ExitDistribution extends App {
         and "p_info_mingle" <~ (0.1,0.3,0.6)
         and "p_info_contacts" <~ (0.1,0.3,0.6)
         and "p_transfer_info" <~ (0.1,0.3,0.6))
-*/
+
 
       observeAt(stopTime)
       //observe("fired" ~ expressionDistribution(agentType = "World", expression = "ego.fired"))
