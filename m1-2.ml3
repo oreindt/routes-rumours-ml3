@@ -24,13 +24,21 @@ Link(
   distance : real
 )
 
+InfoLink(
+  friction : real,
+  friction_trust : real
+)
+
+
 singleton World()
 
 location:Location[1]<->[n]Migrant:migrants // migrants to locations
 destination:Location[1]<->[n]Migrant:incoming // migrants on the move linked to their distination
 links:Link[n]<->[n]Location:endpoints // location to the link object to another location
 knowledge:Information[n]<->[1]Migrant:owner // migrants to their knowledge
+link_knowledge:InfoLink[n]<->[1]Migrant:owner // migrants to their knowledge
 subject:Location[1]<->[n]Information:information // pieces of information to the subject location
+subject:Link[1]<->[n]InfoLink:information // pieces of information to the subject link
 contacts:Migrant[n]<->[n]Migrant:contacts // contact network
 
 n_cities		: int	:= 300 // number of cities
@@ -56,7 +64,8 @@ p_know_target	: real	:= 0.0
 
 res_exp			: real	:= 0.5
 qual_exp		: real	:= 0.5
-//frict_exp		:: VF		:= [1.25, 12.5]
+frict_exp_fast  : real	:= 1.25
+frict_exp_slow  : real	:= 12.5
 p_find_links	: real	 := 0.5
 trust_found_links : real := 0.5
 p_find_dests	: real	 := 0.3
@@ -118,7 +127,24 @@ Migrant.exchange_info(?other : Migrant) ->
     ?otherInfo := ?other.knowledge.filter(?info.subject = alter.subject).only()
     ego.exchange_beliefs(?info, ?otherInfo, ?otherArrived)
   end
-  // TODO: link knowledge
+  // link knowledge
+  ?egoExclusive_link := ego.link_knowledge.filter(!?other.knows_link(alter.subject))
+  ?otherExclusive_link := ?other.link_knowledge.filter(!ego.knows_link(alter.subject))
+  // ego discover's the links other knows
+  for each ?info in ?otherExclusive_link
+    ego.discover_link(?info.subject)
+  end
+  // other discovers the links ego knows
+  if (!?otherArrived) then
+    for each ?info in ?egoExclusive_link
+      ?other.discover_link(?info.subject)
+    end
+  end
+  // exchange knowledge about the links both know now
+  for each ?info in ego.link_knowledge.filter(?other.knows_link(alter.subject))
+    ?otherInfo := ?other.link_knowledge.filter(?info.subject = alter.subject).only()
+    ego.exchange_beliefs_link(?info, ?otherInfo, ?otherArrived)
+  end
 
 Migrant.exchange_beliefs(?i1 : Information, ?i2 : Information, ?arrived : bool) ->
   // agent 1 evaluated the information differently, if agent 2 has already arrived (agent 1 definitely did not arrive yet)
@@ -143,6 +169,23 @@ Migrant.exchange_beliefs(?i1 : Information, ?i2 : Information, ?arrived : bool) 
     ?i2.quality_trust := 1 - ?d2_q
     ?i2.resources := ?v2_q / (1 - ?d2_q)
     ?i2.resources_trust := 1 - ?d2_q
+  end
+
+Migrant.exchange_beliefs_link(?i1 : InfoLink, ?i2 : InfoLink, ?arrived : bool) ->
+  // agent 1 evaluated the information differently, if agent 2 has already arrived (agent 1 definitely did not arrive yet)
+  ?convince1 := if (?arrived) then convince^(1 / weight_arr) else convince
+  ?convert1 := if (?arrived) then convert^(1 / weight_arr) else convince
+  ?confuse1 := convince
+  ?v1_q := ego.receive_value(?i1.friction, ?i1.friction_trust, ?i2.friction, ?i2.friction_trust, ?convince1, ?convert1, ?confuse1)
+  ?d1_q := ego.receive_doubt(?i1.friction, ?i1.friction_trust, ?i2.friction, ?i2.friction_trust, ?convince1, ?convert1, ?confuse1)
+  ?i1.friction := ?v1_q / (1 - ?d1_q)
+  ?i1.friction_trust := 1 - ?d1_q
+  // agent 2 does not update their knowledge, if they have arrived
+  if (!?arrived) then
+    ?v2_q := ego.receive_value(?i2.friction, ?i2.friction_trust, ?i1.friction, ?i1.friction_trust, convince, convert, confuse)
+    ?d2_q := ego.receive_doubt(?i2.friction, ?i2.friction_trust, ?i1.friction, ?i1.friction_trust, convince, convert, confuse)
+    ?i2.friction := ?v2_q / (1 - ?d2_q)
+    ?i2.friction_trust := 1 - ?d2_q
   end
 
 Migrant.receive_value(?v1 : real, ?t1 : real, ?v2 : real, ?t2 : real, ?ci : real, ?ce : real, ?cu : real) : real :=
@@ -177,41 +220,63 @@ Migrant.discover_location(?loc : Location) ->
   ?k.resources := res_exp
   ?k.resources_trust := 0.00001
 
+Migrant.discover_link(?link : Link) ->
+  ?k := new InfoLink()
+  ?k.owner := ego
+  ?k.subject := ?link
+  ?k.friction := if ?link.type = "slow" then ?link.distance * frict_exp_slow else ?link.distance * frict_exp_fast
+  ?k.friction_trust := 0.00001
+
 // (== costs_stay)
 Migrant
   | !ego.in_transit
-  @ 1 // TODO: rate
+  @ 1
   -> ego.capital += ben_resources * ego.location.resources - costs_stay
 
 // (== explore)
 Migrant
  | !ego.in_transit
- @ 1 // TODO: rate
+ @ 1
  -> ego.explore_at(ego.location, speed_expl_stay, true)
 
 
 Migrant.explore_at(?loc : Location, ?speed : real, ?allow_indirect : bool) ->
-  if (!ego.knows(ego.location)) then
+  if (!ego.knows(?loc)) then
     ego.discover_location(?loc)
   end
-  ?k := ego.knowledge_about(ego.location)
-  ?k.quality := ego.weighted_average(?k.quality, ego.location.quality, ?speed)
-  ?k.resources := ego.weighted_average(?k.resources, ego.location.quality, ?speed)
-  ?k.quality_trust := ego.weighted_average(?k.quality_trust, 0.999999, ?speed) // TODO: why the -eps
+  ?k := ego.knowledge_about(?loc)
+  ?k.quality := ego.weighted_average(?k.quality, ?loc.quality, ?speed)
+  ?k.resources := ego.weighted_average(?k.resources, ?loc.quality, ?speed)
+  ?k.quality_trust := ego.weighted_average(?k.quality_trust, 0.999999, ?speed)
   ?k.resources_trust := ego.weighted_average(?k.resources_trust, 0.999999, ?speed)
-  // TODO: knowledge about links, see explore_at
+
   if (?allow_indirect) then
     for each ?link in ?loc.links
       if (random() < p_find_links) then
+        ego.explore_link(?link, ?speed)
         ?other := ?link.endpoints.filter(alter != ?loc).only()
         ego.explore_at(?other, ?speed, false)
       end
     end
   end
 
+Migrant.knows_link(?link : Link) : bool :=
+  ego.link_knowledge.filter(alter.subject = ?link).size() > 0
+
+Migrant.knowledge_about_link(?link : Link) : InfoLink :=
+  ego.link_knowledge.filter(alter.subject = ?link).only()
+
+Migrant.explore_link(?link : Link, ?speed : real) ->
+  if (!ego.knows_link(?link)) then
+    ego.discover_link(?link)
+  end
+  ?k := ego.knowledge_about_link(?link)
+  ?k.friction := ego.weighted_average(?k.friction, ?link.friction, ?speed)
+  ?k.friction_trust := ego.weighted_average(?k.friction_trust, 0.999999, ?speed)
+
 Migrant.explore_move() ->
   ego.explore_at(ego.destination, speed_expl_move, false)
-  // TODO: the rest of explore_move that handles link knowledge
+  ego.explore_link(ego.location.links.filter(ego.destination in alter.endpoints).only(), speed_expl_move)
 
 
 Migrant.weighted_average(?val : real, ?target : real, ?weight : real) : real :=
@@ -240,20 +305,31 @@ Migrant.move_rate() : real :=
   if ?thereQuality > ?hereQuality then
     if ?hereQuality != 0 then ?thereQuality / 2 * ?hereQuality + 1 else 1
   else 0
-where ?hereQuality := ego.quality(ego.location)
+where ?hereQuality := ego.quality_loc(ego.location)
       ?there := ego.decide_destination()
-      ?thereQuality := ego.quality(?there)
+      ?thereQuality := ego.quality_loc(?there)
 
 // (== decide_move)
 Migrant.decide_destination() : Location :=
-  ?neighbors.argmax(ego.quality(alter))
-where ?neighbors := (ego.location.links.collect(alter.endpoints) - [ego.location])
+  ego.location.links.argmax(ego.quality_link(alter)).endpoints.filter(alter != ego.location).only()
+  // ?neighbors.argmax(ego.quality_loc(alter))
+//where ?neighbors := (ego.location.links.collect(alter.endpoints) - [ego.location])
 
-// (== quality)
-Migrant.quality(?loc : Location) : real :=
-  if ?infos.isEmpty() then ?closeness // TODO: what shall happen, when there is no knowledge
+// (== quality for links)
+Migrant.quality_link(?link : Link) : real :=
+  if ?infos.isEmpty() then 0
+  else ego.quality_loc(?other_side) / (1 + ?info.friction * qual_weight_frict)
+where ?other_side := ?link.endpoints.filter(alter != ego.location).only()
+      ?infos := ego.link_knowledge.filter(alter.subject = ?link)
+      ?info := ?infos.only()
+
+
+
+// (== quality for locations)
+Migrant.quality_loc(?loc : Location) : real :=
+  if ?infos.isEmpty() then ?closeness
   else ?quality + ?closeness + ?resources
-where ?infos := ego.knowledge.filter(alter.subject = ego.location)
+where ?infos := ego.knowledge.filter(alter.subject = ?loc)
       ?info := ?infos.only()
       ?quality := ?info.quality * ?info.quality_trust
       ?closeness := ?loc.x * qual_weight_x
@@ -272,7 +348,6 @@ Migrant
   @ ego.move_rate()
   -> ego.in_transit := true
      ego.destination := ego.decide_destination()
-     //ego.location := ego.decide_destination()
      ego.capital -= ego.move_cost(ego.destination)
 
 // people in transit arrive at their destination

@@ -1,16 +1,20 @@
+package org.sessl
+
 import org.apache.commons.math3.random.RandomGenerator
 import org.jamesii.ml3.experiment.init.IInitialStateBuilder
 import org.jamesii.ml3.model.agents.{IAgent, IAgentFactory}
 import org.jamesii.ml3.model.state.{IState, IStateFactory}
-import org.jamesii.ml3.model.values.{RealValue, StringValue}
+import org.jamesii.ml3.model.values.{IntValue, RealValue, StringValue}
 import org.jamesii.ml3.model.{Model, Parameters}
 
 import scala.collection.JavaConverters._
 
 trait WorldGeneration {
-  implicit def double2RealValue(value: Double) : RealValue = new RealValue(value)
+  implicit def double2RealValue(value: Double): RealValue = new RealValue(value)
 
-  implicit def string2StringValue(value: String) : StringValue = new StringValue(value)
+  implicit def string2StringValue(value: String): StringValue = new StringValue(value)
+
+  implicit def int2IntValue(value: Int): IntValue = new IntValue(value)
 
   object WorldGenerator extends IInitialStateBuilder {
     override def buildInitialState(model: Model,
@@ -21,6 +25,10 @@ trait WorldGeneration {
 
       val state = createNodes(model, sf, af, rng, par)
       createEntries(model, sf, af, rng, par, state)
+      createExits(model, sf, af, rng, par, state)
+      val worldType = model.getAgentDeclaration("World")
+      val world = af.createAgent(worldType, 0.0)
+      state.addAgent(world)
 
       state
     }
@@ -38,7 +46,7 @@ trait WorldGeneration {
 
       for (i <- 1 to nNodes) {
         val newNode = createLocation(af, model, rng, rng.nextDouble(), rng.nextDouble(), "std", rng.nextDouble(), rng.nextDouble())
-        for (otherNode <- state.getAgents.asScala) {
+        for (otherNode <- state.getAgentsByType("Location").asScala) {
           if (sqDist(newNode, otherNode) < sqThresh) {
             state.addAgent(createLink(af, model, rng, par, newNode, otherNode, "fast"))
           }
@@ -64,7 +72,7 @@ trait WorldGeneration {
 
       for (i <- 1 to nEntries) {
         val newNode = createLocation(af, model, rng, 0, rng.nextDouble(), "entry", qual, res)
-        for (otherNode <- state.getAgents.asScala.filter(n => !n.getAttributeValue("type").getValue.equals("entry"))) {
+        for (otherNode <- state.getAgentsByType("Location").asScala.filter(n => n.getAttributeValue("type").getValue.equals("std"))) {
           val otherX = otherNode.getAttributeValue("x").getValue.asInstanceOf[Double]
           if (otherX < threshDist) {
             state.addAgent(createLink(af, model, rng, par, newNode, otherNode, "slow"))
@@ -83,14 +91,14 @@ trait WorldGeneration {
                             state: IState): Unit = {
       val ad = model.getAgentDeclaration("Location")
 
-      val nEntries = par.getValue("n_exits").getValue.asInstanceOf[Int]
-      val threshDist = par.getValue("entry_dist").getValue.asInstanceOf[Double]
+      val nExits = par.getValue("n_exits").getValue.asInstanceOf[Int]
+      val threshDist = par.getValue("exit_dist").getValue.asInstanceOf[Double]
       val qual = par.getValue("qual_exit").getValue.asInstanceOf[Double]
       val res = par.getValue("res_exit").getValue.asInstanceOf[Double]
 
-      for (i <- 1 to nEntries) {
-        val newNode = createLocation(af, model, rng, 0, rng.nextDouble(), "entry", qual, res)
-        for (otherNode <- state.getAgents.asScala.filter(n => !n.getAttributeValue("type").getValue.equals("exit"))) {
+      for (i <- 1 to nExits) {
+        val newNode = createLocation(af, model, rng, 1, rng.nextDouble(), "exit", qual, res)
+        for (otherNode <- state.getAgentsByType("Location").asScala.filter(n => n.getAttributeValue("type").getValue.equals("std"))) {
           val otherX = otherNode.getAttributeValue("x").getValue.asInstanceOf[Double]
           if (otherX > threshDist) {
             state.addAgent(createLink(af, model, rng, par, newNode, otherNode, "slow"))
