@@ -16,24 +16,7 @@ object ExitDistribution extends App {
       startTime = 0
       stopTime = 100 // 500
 
-      initializeWith(() => new JsonStateBuilder("init.json"))
-
-      set("n_cities" <~ 100) // 100?
-      set("link_thresh" <~ 0.1) // 0.1
-
-      set("n_entries" <~ 3) // 3
-      set("entry_dist" <~ 0.1) // 0.1
-      set("qual_entry" <~ 0.0)
-      set("res_entry" <~ 0.0)
-
-      set("n_exits" <~ 10)
-      set("exit_dist" <~ 0.5) // 0.5
-      set("qual_exit" <~ 1.0)
-      set("res_exit" <~ 1.0)
-
-      set("dist_scale_slow" <~ 10.0)
-      set("dist_scale_fast" <~ 1.0)
-      set("frict_range" <~ 0.5)
+      initializeWith(() => new JsonStateBuilder("init50.json"))
 
 /*
       scan("p_find_links" <~ (0.1,0.5,1.0)
@@ -45,21 +28,19 @@ object ExitDistribution extends App {
         and "p_info_contacts" <~ (0.1,0.3,0.6)
         and "p_transfer_info" <~ (0.1,0.3,0.6))
 */
+
       observeAt(stopTime)
       //observe("fired" ~ expressionDistribution(agentType = "World", expression = "ego.fired"))
       observe("migrants" ~ agentCount(agentType = "Migrant")) // this only counts agents who are alive, i.e., have not arrived at an exit
-      observe("info" ~ agentCount(agentType = "Information"))
-      observe("info_loc" ~ agentCount(agentType = "InfoLoc"))
+      observe("info_loc" ~ agentCount(agentType = "Information"))
+      observe("info_link" ~ agentCount(agentType = "InfoLink"))
+      observe("cities" ~ agentCount(agentType = "Location"))
+      observe("links" ~ agentCount(agentType = "Link"))
       //observe("exits" ~ agentCount(agentType = "Location", filter = "ego.type = 'exit'"))
       //observe("entries" ~ agentCount(agentType = "Location", filter = "ego.type = 'entry'"))
       //observe("cities" ~ agentCount(agentType = "Location", filter = "ego.type = 'std'"))
-      observe("entering" ~ expressionDistribution(agentType = "Location", filter = "ego.type = 'entry'", expression = "ego.migrants.size()"))
+      //observe("entering" ~ expressionDistribution(agentType = "Location", filter = "ego.type = 'entry'", expression = "ego.migrants.size()"))
       observe("exiting" ~ expressionDistribution(agentType = "Location", filter = "ego.type = 'exit'", expression = "ego.migrants.size()"))
-      //observe("moving" ~ expressionDistribution(agentType = "Location", filter = "ego.type = 'std'", expression = "ego.migrants.size()"))
-      //observe("capital" ~ expressionDistribution(agentType = "Migrant", expression = "ego.capital"))
-      //observe("entry-links" ~ expressionDistribution(agentType = "Location", filter = "ego.type = 'entry'", expression = "ego.links.size()"))
-      //observe("exit-links" ~ expressionDistribution(agentType = "Location", filter = "ego.type = 'exit'", expression = "ego.links.size()"))
-      //observe("city-links" ~ expressionDistribution(agentType = "Location", filter = "ego.type = 'std'", expression = "ego.links.size()"))
       withExperimentResult(writeCSV)
     }
   execute(experiment)
