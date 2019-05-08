@@ -59,8 +59,8 @@ p_find_links	: real	 := 0.5
 trust_found_links : real := 0.5
 p_find_dests	: real	 := 0.3
 trust_travelled	: real	 := 0.8
-speed_expl_stay : real	 := 1.0
-speed_expl_move : real	 := 1.0
+speed_expl_stay : real	 := 0.5
+speed_expl_move : real	 := 0.5
 
 costs_stay		: real	 := 1.0
 ben_resources	: real 	 := 5.0
@@ -70,10 +70,10 @@ qual_weight_x	: real	 := 0.5
 qual_weight_res	: real   := 0.1
 qual_weight_frict : real := 0.1
 
-p_keep_contact 	: real 	:= 0.1
-p_info_mingle	: real	:= 0.1
-p_info_contacts	: real	:= 0.1
-p_transfer_info	: real	:= 0.1
+p_keep_contact 	: real 	:= 0.3
+p_info_mingle	: real	:= 0.3
+p_info_contacts	: real	:= 0.3
+p_transfer_info	: real	:= 0.3
 n_contacts_max	: int	:= 50
 arr_learn		: real	:= 0.0
 convince		: real	:= 0.5 // change doubt into belief

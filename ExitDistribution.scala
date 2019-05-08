@@ -12,9 +12,9 @@ object ExitDistribution extends App {
       model = "m1-2.ml3"
       simulator = NextReactionMethod()
       parallelThreads = -1
-      replications = 10 // 10
+      replications = 1 // 10
       startTime = 0
-      stopTime = 100 // 500
+      stopTime = 10 // 500
 
       initializeWith(() => new JsonStateBuilder("init50.json"))
 
@@ -41,7 +41,8 @@ object ExitDistribution extends App {
       //observe("cities" ~ agentCount(agentType = "Location", filter = "ego.type = 'std'"))
       //observe("entering" ~ expressionDistribution(agentType = "Location", filter = "ego.type = 'entry'", expression = "ego.migrants.size()"))
       observe("exiting" ~ expressionDistribution(agentType = "Location", filter = "ego.type = 'exit'", expression = "ego.migrants.size()"))
-      withExperimentResult(writeCSV)
+      observe("y" ~ expressionDistribution(agentType = "Location", filter = "ego.type = 'exit'", expression = "ego.y"))
+      withRunResult(writeCSV)
     }
   execute(experiment)
   System.out.println(experiment.executionTime.get / (1000 * 60) + " min")
