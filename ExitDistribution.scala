@@ -9,12 +9,12 @@ object ExitDistribution extends App {
 
   val experiment = new Experiment with Observation with ParallelExecution with WorldGeneration with CSVOutput with TimeMeasurement {
 
-      model = "m1-2.ml3"
+      model = "routes.ml3"
       simulator = NextReactionMethod()
       parallelThreads = -1
-      replications = 1 // 10
+      replications = 10 // 10
       startTime = 0
-      stopTime = 10 // 500
+      stopTime = 100 // 500
 
       initializeWith(() => new JsonStateBuilder("init50.json"))
 

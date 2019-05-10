@@ -11,7 +11,7 @@ import org.jamesii.ml3.simulator.factory.NextReactionMethodSimulatorFactory
 
 object SaveWorld extends App with WorldGeneration {
   
-  val t = ParserUtil.parseFile("m1-2.ml3")
+  val t = ParserUtil.parseFile("routes.ml3")
   val mb = new ModelBuilder
   val model = mb.build(t)
 
