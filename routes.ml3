@@ -82,6 +82,8 @@ confuse			: real	:= 0.3 // change belief into doubt
 error			: real 	:= 0.1 // stochastic error when transmitting information
 weight_arr		: real	:= 1.0
 
+expl_rate : real := 1
+cost_rate : real := 1
 
 Link.other_side(?loc : Location) : Location :=
   ego.endpoints.filter(?loc != alter).only()
@@ -219,16 +221,16 @@ Migrant.discover_link(?link : Link) ->
 // (== costs_stay)
 Migrant
   | !ego.in_transit
-  @ 1
+  @ cost_rate
   -> ego.capital += ben_resources * ego.location.resources - costs_stay
 
 // (== explore)
 Migrant
  | !ego.in_transit
- @ 1
+ @ expl_rate
  -> ego.explore_at(ego.location, speed_expl_stay, true)
 
-
+// explore at a location, possibly explore adjacent links
 Migrant.explore_at(?loc : Location, ?speed : real, ?allow_indirect : bool) ->
   if (!ego.knows(?loc)) then
     ego.discover_location(?loc)
@@ -263,6 +265,7 @@ Migrant.explore_link(?link : Link, ?speed : real) ->
   ?k.friction := ego.weighted_average(?k.friction, ?link.friction, ?speed)
   ?k.friction_trust := ego.weighted_average(?k.friction_trust, 0.999999, ?speed)
 
+// while in transit
 Migrant.explore_move() ->
   ego.explore_at(ego.destination, speed_expl_move, false)
   ego.explore_link(ego.location.links.filter(ego.destination in alter.endpoints).only(), speed_expl_move)
@@ -328,6 +331,7 @@ where ?infos := ego.knowledge.filter(alter.subject = ?loc)
 Migrant.move_cost(?destination : Location) : real :=
   costs_move * ego.location.links.filter(?destination in alter.endpoints).only().friction
 
+// distance of the link the agent currently moves through
 Migrant.move_distance() : real :=
   ego.location.links.filter(ego.destination in alter.endpoints).only().distance
 
