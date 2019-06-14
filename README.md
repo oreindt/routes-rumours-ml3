@@ -1,5 +1,5 @@
 # ML3 Version of the Routes Rumours Model #
-see https://github.com/mhinsch/RoutesRumours
+see https://github.com/mhinsch/RRGraphs_mini
 
 # SESSL/ML3 Quick Start #
 see https://git.informatik.uni-rostock.de/mosi/sessl-ml3-quickstart
