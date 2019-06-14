@@ -286,7 +286,7 @@ where ?people := (ego.location.migrants - [ego]).filter(alter.contacts.size() < 
 // the exchanging info part of mingle
 Migrant
   | !ego.in_transit
-  @ ?people.size() * p_info_contact
+  @ ?people.size() * p_info_contacts
   -> ?other := ?people.random()
      ego.exchange_info(?other)
 where ?people := ego.location.migrants - [ego]
@@ -304,7 +304,7 @@ where ?hereQuality := ego.quality_loc(ego.location)
 
 // (== decide_move)
 Migrant.decide_destination() : Location :=
-  ego.location.links.argmax(ego.quality_link(alter)).endpoints.filter(alter != ego.location).only()
+  ego.location.links.weightedRandom(ego.quality_link(alter)+0.00001).endpoints.filter(alter != ego.location).only()
   // ?neighbors.argmax(ego.quality_loc(alter))
 //where ?neighbors := (ego.location.links.collect(alter.endpoints) - [ego.location])
 
