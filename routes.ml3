@@ -84,6 +84,7 @@ weight_arr		: real	:= 1.0
 
 expl_rate : real := 1
 cost_rate : real := 1
+transit_rate : real := 1
 
 Link.other_side(?loc : Location) : Location :=
   ego.endpoints.filter(?loc != alter).only()
@@ -337,7 +338,7 @@ Migrant.move_distance() : real :=
 
 // decide to move to a new location
 Migrant
-  | ego.capital >= 0, !ego.in_transit
+  | !ego.in_transit
   @ ego.move_rate()
   -> ego.in_transit := true
      ego.destination := ego.decide_destination()
@@ -346,7 +347,7 @@ Migrant
 // people in transit arrive at their destination
 Migrant
   | ego.in_transit
-  @ 1 / ego.move_distance()
+  @ transit_rate // / ego.move_distance()
   -> ego.location := ego.destination
      ego.in_transit := false
      if ego.location.type = "exit" then ego.die() end // arrival
