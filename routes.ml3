@@ -280,16 +280,18 @@ Migrant.weighted_average(?val : real, ?target : real, ?weight : real) : real :=
 Migrant
   | !ego.in_transit && ego.contacts.size() < n_contacts_max
   @ ?people.size() * p_keep_contact
-  -> ego.contacts += [?people.random()]
+  -> ?other := ?people.random()
+     ego.contacts += [?other]
+     ego.exchange_info(?other)
 where ?people := (ego.location.migrants - [ego]).filter(alter.contacts.size() < n_contacts_max)
 
-// the exchanging info part of mingle
+// communication
 Migrant
   | !ego.in_transit
   @ ?people.size() * p_info_contacts
   -> ?other := ?people.random()
      ego.exchange_info(?other)
-where ?people := ego.location.migrants - [ego]
+where ?people := ego.contacts
 
 /*
  * MOVING AROUND
