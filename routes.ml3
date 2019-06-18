@@ -39,7 +39,7 @@ knowledge:Information[n]<->[1]Migrant:owner // migrants to their knowledge
 link_knowledge:InfoLink[n]<->[1]Migrant:owner // migrants to their knowledge
 subject:Location[1]<->[n]Information:information // pieces of information to the subject location
 subject:Link[1]<->[n]InfoLink:information // pieces of information to the subject link
-contacts:Migrant[n]<->[n]Migrant:contacts // contact network
+contacts:Migrant[n]<->[n]Migrant:contacters // contact network
 
 rate_dep	 	: real	:= 10 // 20 // number of departures per time step
 
@@ -283,7 +283,10 @@ Migrant
   -> ?other := ?people.random()
      ego.contacts += [?other]
      ego.exchange_info(?other)
-where ?people := (ego.location.migrants - [ego]).filter(alter.contacts.size() < n_contacts_max)
+     if (?other.contacts.size() < n_contacts_max) then
+       ?other.contacts += [ego]
+     end
+where ?people := ego.location.migrants - [ego]
 
 // communication
 Migrant
@@ -360,6 +363,11 @@ World
   @ rate_dep
   -> ?migrant := new Migrant(capital := ini_capital, in_transit := false)
      ?migrant.contacts := Migrant.all.random(n_ini_contacts) - [?migrant]
+     for each ?other in ?migrant.contacts
+       if (?other.contacts.size() < n_contacts_max) then
+         ?other.contacts += [?migrant]
+       end
+     end
      ?migrant.location := Location.all.filter(alter.type = "entry").random()
      for each ?exit in ?exits
        if random() < p_know_target then ?migrant.explore_at(?exit, speed_expl_stay, true) end

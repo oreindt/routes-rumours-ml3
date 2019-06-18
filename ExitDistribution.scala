@@ -28,7 +28,7 @@ object ExitDistribution extends App {
     set("p_info_contacts" <~ 0.1)
     set("p_transfer_info" <~ 0.1)
 
-    observeAt(stopTime)
+    observeAt(range(0,1,stopTime))
     observe("migrants" ~ agentCount(agentType = "Migrant")) // this only counts agents who are alive, i.e., have not arrived at an exit
     observe("info_loc" ~ agentCount(agentType = "Information"))
     observe("info_link" ~ agentCount(agentType = "InfoLink"))
