@@ -300,22 +300,25 @@ where ?people := ego.contacts
  * MOVING AROUND
  */
 Migrant.move_rate() : real :=
-  if ?thereQuality > ?hereQuality then
-    if ?hereQuality != 0 then ?thereQuality / 2 * ?hereQuality + 1 else 1
-  else 0
-where ?hereQuality := ego.quality_loc(ego.location)
-      ?there := ego.decide_destination()
-      ?thereQuality := ego.quality_loc(?there)
+//  if ?thereQuality > ?hereQuality then
+//    if ?hereQuality != 0 then ?thereQuality / 2 * ?hereQuality + 1 else 1
+//  else 0
+  if ?hereQuality > 0 then ?expectedQuality / ?hereQuality else 1
+// where ?hereQuality := ego.quality_loc(ego.location)
+//      ?there := ego.decide_destination()
+//      ?thereQuality := ego.quality_loc(?there)
+where ?expectedQuality := ego.location.links.sum(ego.quality_link(alter) ^ 2.0) / (ego.location.links.size() * ego.location.links.sum(ego.quality_link(alter))) // expected quality going to a destination
+      ?hereQuality :=ego.quality_loc(ego.location)
 
 // (== decide_move)
 Migrant.decide_destination() : Location :=
-  ego.location.links.weightedRandom(ego.quality_link(alter)+0.00001).endpoints.filter(alter != ego.location).only()
+  ego.location.links.weightedRandom(ego.quality_link(alter)).endpoints.filter(alter != ego.location).only()
   // ?neighbors.argmax(ego.quality_loc(alter))
 //where ?neighbors := (ego.location.links.collect(alter.endpoints) - [ego.location])
 
 // (== quality for links)
 Migrant.quality_link(?link : Link) : real :=
-  if ?infos.isEmpty() then 0
+  if ?infos.isEmpty() then 0.00001
   else ego.quality_loc(?other_side) / (1 + ?info.friction * qual_weight_frict)
 where ?other_side := ?link.endpoints.filter(alter != ego.location).only()
       ?infos := ego.link_knowledge.filter(alter.subject = ?link)
