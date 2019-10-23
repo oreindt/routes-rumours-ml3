@@ -44,7 +44,7 @@
 					<scalaVersion>2.12.4</scalaVersion>
 					<launchers>
 						<launcher>
-							<mainClass>org.sessl.SmallWorldTests</mainClass>
+							<mainClass>org.sessl.ExitDistribution</mainClass>
 							<jvmArgs>
 								<!-- Set the log level to one of the following values:
 								 debug (most verbose)
