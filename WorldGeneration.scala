@@ -125,7 +125,7 @@ trait WorldGeneration {
 
       val distance = Math.sqrt(sqDist(loc1, loc2))
       val distanceImpact = if (typ == "slow") distScaleSlow * distance else distSclaeFast * distance
-      val friction = distanceImpact * (1 + rng.nextDouble() + frictRange)
+      val friction = distanceImpact * (1 + rng.nextDouble() * frictRange)
 
       newLink.setAttributeValue("friction", friction)
       newLink.setAttributeValue("distance", distance)

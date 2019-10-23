@@ -41,6 +41,6 @@ object SaveWorld extends App with WorldGeneration {
 
   val state = WorldGenerator.buildInitialState(model, sf, af, rng, par)
 
-  val writer = new JsonStateWriter("init50.json", model)
+  val writer = new JsonStateWriter("init50_1.json", model)
   writer.write(state, 0)
 }
