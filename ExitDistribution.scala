@@ -14,7 +14,7 @@ object ExitDistribution extends App {
     parallelThreads = -1
     replications = 10 // 10
     startTime = 0
-    stopTime = 1 // 500
+    stopTime = 100 // 500
 
     initializeWith(() => new JsonStateBuilder("init50_1.json"))
 
