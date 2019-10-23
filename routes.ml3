@@ -1,6 +1,7 @@
 Migrant(
   capital : real,
-  in_transit : bool
+  in_transit : bool,
+  steps : int
 )
 
 Location(
@@ -98,9 +99,9 @@ World.average_accuracy() : real :=
 World.average_accuracy_link() : real :=
   InfoLink.all.sum(alter.accuracy()) / InfoLink.all.size()
 Location.accuracy_about() : real :=
-  ego.information.sum(alter.accuracy()) / ego.information.size()
+  if (ego.information.size() > 0) then ego.information.sum(alter.accuracy()) / ego.information.size() else -1
 Link.accuracy_about() : real :=
-  ego.information.sum(alter.accuracy()) / ego.information.size()
+  if (ego.information.size() > 0) then ego.information.sum(alter.accuracy()) / ego.information.size() else -1
 
 
 Link.other_side(?loc : Location) : Location :=
@@ -387,6 +388,7 @@ Migrant
      ?link := ego.location.links.filter((ego.location in alter.endpoints) && (ego.destination in alter.endpoints)).only()
      ?link.visits += 1
      ego.capital -= ego.move_cost(ego.destination)
+     ego.steps += 1
 
 // people in transit arrive at their destination
 Migrant
