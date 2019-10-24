@@ -56,6 +56,7 @@ object ExitDistribution extends App {
     observe("link_accuracy" ~ expressionDistribution(agentType = "Link", expression = "ego.accuracy_about()"))
     observe("link_n_info" ~ expressionDistribution(agentType = "Link", expression = "ego.information.size()"))
 
+
     withRunResult(writeCSV)
   }
   execute(experiment)

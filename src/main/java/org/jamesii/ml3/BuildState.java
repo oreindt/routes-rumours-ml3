@@ -14,10 +14,14 @@ import org.jamesii.ml3.model.values.StringValue;
 
 public class BuildState {
 
-    public class FourCity implements IInitialStateBuilder {
+    public static class FourCity implements IInitialStateBuilder {
 
         public IState buildInitialState(Model model, IStateFactory sf, IAgentFactory af, RandomGenerator rng, Parameters par) {
             IState s = sf.create();
+
+            AgentDeclaration world = model.getAgentDeclaration("World");
+            IAgent aWorld = af.createAgent(world, 0);
+            s.addAgent(aWorld);
 
             IAgent entry = createLocation(s, af, model, rng, .0, 0.5, "entry", 0, 0);
             IAgent mid = createLocation(s, af, model, rng, 0.5, 0.5, "std", 0.1, 0.1);
@@ -32,10 +36,14 @@ public class BuildState {
         }
     }
 
-    public class ThreeCity implements IInitialStateBuilder {
+    public static class ThreeCity implements IInitialStateBuilder {
 
         public IState buildInitialState(Model model, IStateFactory sf, IAgentFactory af, RandomGenerator rng, Parameters par) {
             IState s = sf.create();
+
+            AgentDeclaration world = model.getAgentDeclaration("World");
+            IAgent aWorld = af.createAgent(world, 0);
+            s.addAgent(aWorld);
 
             IAgent entry = createLocation(s, af, model, rng, .0, 0.5, "entry", 0, 0);
             IAgent exit1 = createLocation(s, af, model, rng, 0.99, 0.0, "exit", 0.5, 0.5);
@@ -48,7 +56,7 @@ public class BuildState {
         }
     }
 
-    private IAgent createLink(IState s, IAgentFactory af,
+    private static IAgent createLink(IState s, IAgentFactory af,
                               Model model,
                               RandomGenerator rng,
                               Parameters par,
@@ -79,7 +87,7 @@ public class BuildState {
         return newLink;
     }
 
-    private IAgent createLocation(IState s, IAgentFactory af, Model model, RandomGenerator rng,
+    private static IAgent createLocation(IState s, IAgentFactory af, Model model, RandomGenerator rng,
                                Double x, Double y,
                                String typ,
                                double quality, double resources) {
@@ -96,7 +104,7 @@ public class BuildState {
         return newNode;
     }
 
-    private double sqDist(IAgent loc1, IAgent loc2) {
+    private static double sqDist(IAgent loc1, IAgent loc2) {
         double x1 = ((RealValue) loc1.getAttributeValue("x")).getValue();
         double y1 = ((RealValue) loc1.getAttributeValue("y")).getValue();
         double x2 = ((RealValue) loc2.getAttributeValue("x")).getValue();

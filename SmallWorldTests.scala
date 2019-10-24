@@ -1,198 +1,116 @@
-package org.sessl
-
-import java.text.SimpleDateFormat
-import java.util.Calendar
-
-import src.main.java.org.jamesii.ml3.{FourCity, ThreeCity}
+import org.jamesii.ml3.experiment.init.IInitialStateBuilder
+import src.main.java.org.jamesii.ml3.{BuildState, FourCity, ThreeCity}
 
 object SmallWorldTests extends App {
 
   import sessl._
   import sessl.ml3._
 
-  execute(new Standard3)
-  execute(new FullExplore3)
-  execute(new NoCommunication3)
-  execute(new Both3)
-  execute(new Standard4)
-  execute(new FullExplore4)
-  execute(new NoCommunication4)
-  execute(new Both4)
+  execute(new Standard(new BuildState.ThreeCity, "std-3"))
+  execute(new Standard(new BuildState.FourCity, "std-4"))
+  execute(new FullExplore(new BuildState.ThreeCity, "full-expl-3"))
+  execute(new FullExplore(new BuildState.FourCity, "full-expl-4"))
+  execute(new NoCommunication(new BuildState.ThreeCity, "no-comm-3"))
+  execute(new NoCommunication(new BuildState.FourCity, "no-comm-4"))
+  execute(new Both(new BuildState.ThreeCity, "both-3"))
+  execute(new Both(new BuildState.FourCity, "both-4"))
+  execute(new ImperfectExplore(new BuildState.ThreeCity, "half-expl-3"))
+  execute(new ImperfectExplore(new BuildState.FourCity, "half-expl-4"))
+  execute(new NoContacts(new BuildState.ThreeCity, "no-contacts-3"))
+  execute(new NoContacts(new BuildState.FourCity, "no-contacts-4"))
 
-  class Standard4 extends RRExperiment {
-    initializeWith(() => new FourCity())
 
-    // std scenario
-    set("p_find_links" <~ 0.5) // 0.5
-    // set("p_find_dests" <~ 0.3)
-    set("speed_expl_stay" <~ 1.0)
-    set("speed_expl_move" <~ 1.0)
-    set("p_keep_contact" <~ 0.1) // 0.1
-    set("p_info_mingle" <~ 0.1)
-    set("p_info_contacts" <~ 0.1) // 0.1
-    // set("p_transfer_info" <~ 0.0) // 0.1
-    set("p_know_target" <~ 0.0) // none
-
-    csvOutputDirectory(() => "results-std-4")
-    withRunResult { results =>
-      writeCSV(results)
-    }
+  class Standard(init : IInitialStateBuilder, name : String) extends RRExperiment(init, name) {
   }
 
-  class FullExplore4 extends RRExperiment {
-    initializeWith(() => new FourCity())
-
-    // full explore scenario
+  class FullExplore(init : IInitialStateBuilder, name : String) extends RRExperiment(init, name) {
     set("p_find_links" <~ 1.0) // 0.5
-    // set("p_find_dests" <~ 0.3)
-    set("speed_expl_stay" <~ 1.0)
-    set("speed_expl_move" <~ 1.0)
-    set("p_keep_contact" <~ 0.1) // 0.1
-    set("p_info_mingle" <~ 0.1)
-    set("p_info_contacts" <~ 0.1) // 0.1
-    // set("p_transfer_info" <~ 0.0) // 0.1
     set("p_know_target" <~ 1.0) // none
-
-    withRunResult { results =>
-      csvOutputDirectory(() => "results-full-expl-4")
-      writeCSV(results)
-    }
   }
 
-  class NoCommunication4 extends RRExperiment {
-    initializeWith(() => new FourCity())
-
-    // full explore scenario
-    set("p_find_links" <~ 0.5) // 0.5
-    // set("p_find_dests" <~ 0.3)
-    set("speed_expl_stay" <~ 1.0)
-    set("speed_expl_move" <~ 1.0)
+  class NoCommunication(init : IInitialStateBuilder, name : String) extends RRExperiment(init, name) {
     set("p_keep_contact" <~ 0.0) // 0.1
-    set("p_info_mingle" <~ 0.1)
     set("p_info_contacts" <~ 0.0) // 0.1
-    // set("p_transfer_info" <~ 0.0) // 0.1
-    set("p_know_target" <~ 0.0) // none
-
-    withRunResult { results =>
-      csvOutputDirectory(() => "results-no-comm-4")
-      writeCSV(results)
-    }
   }
 
-  class Both4 extends RRExperiment {
-    initializeWith(() => new FourCity())
-
-    // full explore and no comm (perfect information)
+  class Both(init : IInitialStateBuilder, name : String) extends RRExperiment(init, name) {
     set("p_find_links" <~ 1.0) // 0.5
-    // set("p_find_dests" <~ 0.3)
-    set("speed_expl_stay" <~ 1.0)
-    set("speed_expl_move" <~ 1.0)
     set("p_keep_contact" <~ 0.0) // 0.1
-    set("p_info_mingle" <~ 0.1)
     set("p_info_contacts" <~ 0.0) // 0.1
-    // set("p_transfer_info" <~ 0.0) // 0.1
     set("p_know_target" <~ 1.0) // none
-
-    withRunResult { results =>
-      csvOutputDirectory(() => "results-both-4")
-      writeCSV(results)
-    }
   }
 
-  class Standard3 extends RRExperiment {
-    initializeWith(() => new ThreeCity())
-
-    // std scenario
+  class ImperfectExplore(init : IInitialStateBuilder, name : String) extends RRExperiment(init, name) {
     set("p_find_links" <~ 0.5) // 0.5
-    // set("p_find_dests" <~ 0.3)
-    set("speed_expl_stay" <~ 1.0)
-    set("speed_expl_move" <~ 1.0)
-    set("p_keep_contact" <~ 0.1) // 0.1
-    set("p_info_mingle" <~ 0.1)
-    set("p_info_contacts" <~ 0.1) // 0.1
-    // set("p_transfer_info" <~ 0.0) // 0.1
-    set("p_know_target" <~ 0.0) // none
-
-    csvOutputDirectory(() => "results-std-3")
-    withRunResult { results =>
-      writeCSV(results)
-    }
-  }
-
-  class FullExplore3 extends RRExperiment {
-    initializeWith(() => new ThreeCity())
-
-    // full explore scenario
-    set("p_find_links" <~ 1.0) // 0.5
-    // set("p_find_dests" <~ 0.3)
-    set("speed_expl_stay" <~ 1.0)
-    set("speed_expl_move" <~ 1.0)
-    set("p_keep_contact" <~ 0.1) // 0.1
-    set("p_info_mingle" <~ 0.1)
-    set("p_info_contacts" <~ 0.1) // 0.1
-    // set("p_transfer_info" <~ 0.0) // 0.1
-    set("p_know_target" <~ 1.0) // none
-
-    withRunResult { results =>
-      csvOutputDirectory(() => "results-full-expl-3")
-      writeCSV(results)
-    }
-  }
-
-  class NoCommunication3 extends RRExperiment {
-    initializeWith(() => new ThreeCity())
-
-    // full explore scenario
-    set("p_find_links" <~ 0.5) // 0.5
-    // set("p_find_dests" <~ 0.3)
-    set("speed_expl_stay" <~ 1.0)
-    set("speed_expl_move" <~ 1.0)
+    set("speed_expl_stay" <~ 0.5)
+    set("speed_expl_move" <~ 0.5)
     set("p_keep_contact" <~ 0.0) // 0.1
-    set("p_info_mingle" <~ 0.1)
     set("p_info_contacts" <~ 0.0) // 0.1
-    // set("p_transfer_info" <~ 0.0) // 0.1
-    set("p_know_target" <~ 0.0) // none
-
-    withRunResult { results =>
-      csvOutputDirectory(() => "results-no-comm-3")
-      writeCSV(results)
-    }
+    set("p_know_target" <~ 0.5) // none
   }
 
-  class Both3 extends RRExperiment {
-    initializeWith(() => new ThreeCity())
-
-    // full explore and no comm (perfect information)
-    set("p_find_links" <~ 1.0) // 0.5
-    // set("p_find_dests" <~ 0.3)
-    set("speed_expl_stay" <~ 1.0)
-    set("speed_expl_move" <~ 1.0)
+  class NoContacts(init : IInitialStateBuilder, name : String) extends RRExperiment(init, name) {
+    set("speed_expl_stay" <~ 0.5)
+    set("speed_expl_move" <~ 0.5)
     set("p_keep_contact" <~ 0.0) // 0.1
-    set("p_info_mingle" <~ 0.1)
-    set("p_info_contacts" <~ 0.0) // 0.1
-    // set("p_transfer_info" <~ 0.0) // 0.1
-    set("p_know_target" <~ 1.0) // none
-
-    withRunResult { results =>
-      csvOutputDirectory(() => "results-both-3")
-      writeCSV(results)
-    }
+    set("p_info_contacts" <~ 0.1) // 0.1
   }
 
-  class RRExperiment extends Experiment with Observation with ParallelExecution with WorldGeneration with CSVOutput with TimeMeasurement {
+  class RRExperiment(init : IInitialStateBuilder, name : String) extends Experiment with Observation with ParallelExecution with CSVOutput with TimeMeasurement {
     model = "routes.ml3"
     simulator = NextReactionMethod()
     parallelThreads = -1
-    replications = 20 // 10
+    replications = 50 // 10
     startTime = 0
     stopTime = 100 // 500
 
     // initializeWith(() => new JsonStateBuilder("init50_1.json"))
-    initializeWith(() => new FourCity())
+    initializeWith(() => init)
 
+    set("rate_dep" <~ 10) // 20 // number of departures per time step
 
+    set("dist_scale_slow" <~ 10.0) // scale >= 1.0 required, otherwise path finding breaks
     set("dist_scale_fast" <~ 1.0)
-    set("frict_range" <~ 0.0)
+    set("frict_range" <~ 0.0) // stochastic range of friction
+
+    set("n_ini_contacts" <~ 10)
+    set("ini_capital" <~ 2000.0)
+    set("p_know_target" <~ 0.0) // none
+
+    set("res_exp" <~ 0.5)
+    set("qual_exp" <~ 0.5)
+    set("frict_exp_fast" <~ 1.25)
+    set("frict_exp_slow" <~ 12.5)
+    set("p_find_links" <~ 0.5) // 0.5
+    // set("trust_found_links" <~ 0.5)
+    // set("p_find_dests" <~ 0.3)
+    // set("trust_travelled" <~ 0.8)
+    set("speed_expl_stay" <~ 1.0)
+    set("speed_expl_move" <~ 1.0)
+
+    set("costs_stay" <~ 1.0)
+    set("ben_resources" <~ 5.0)
+    set("costs_move" <~ 2.0)
+
+    set("qual_weight_x" <~ 0.5)
+    set("qual_weight_res" <~ 0.1)
+    set("qual_weight_frict" <~ 0.1)
+
+    set("p_keep_contact" <~ 0.1) // 0.1
+    // set("p_info_mingle" <~ 0.3)
+    set("p_info_contacts" <~ 0.1) // 0.1
+    // set("p_transfer_info" <~ 0.3)
+    set("n_contacts_max" <~ 50)
+    // set("arr_learn" <~ 0.0)
+    set("convince" <~ 0.5) // change doubt into belief
+    set("convert" <~ 0.1) // change belief into other belief
+    set("confuse" <~ 0.3) // change belief into doubt
+    set("error" <~ 0.1) // stochastic error when transmitting information
+    set("weight_arr" <~ 1.0)
+
+    set("expl_rate" <~ 1)
+    set("cost_rate" <~ 1)
+    set("transit_rate" <~ 1)
 
     // observeAt(range(0,1,stopTime))
 
@@ -224,6 +142,11 @@ object SmallWorldTests extends App {
     observe("link_accuracy" ~ expressionDistribution(agentType = "Link", expression = "ego.accuracy_about()"))
     observe("link_n_info" ~ expressionDistribution(agentType = "Link", expression = "ego.information.size()"))
 
+    observe("city_out_moves" ~ expressionDistribution(agentType = "Location", expression = "ego.moves"))
+    observe("city_comm" ~ expressionDistribution(agentType = "Location", expression = "ego.communication"))
+
+    observe("init_contacts" ~ expressionDistribution(agentType = "World", expression = "ego.contacts_made"))
+
     /*
     // counts
     observe("n_migrant" ~ agentCount("Migrant"))
@@ -249,6 +172,11 @@ object SmallWorldTests extends App {
     observe("knowledge_friction" ~ expressionDistribution(agentType = "InfoLink", expression = "ego.friction"))
     observe("knowledge_real_friction" ~ expressionDistribution(agentType = "InfoLink", expression = "ego.subject.friction"))
     */
+
+    csvOutputDirectory(() => "results-" + name)
+    withRunResult { results =>
+      writeCSV(results)
+    }
   }
 
 }

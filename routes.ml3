@@ -1,7 +1,7 @@
 Migrant(
   capital : real,
   in_transit : bool,
-  steps : int
+  steps : int // counts moves made
 )
 
 Location(
@@ -10,7 +10,9 @@ Location(
   type : {"std", "entry", "exit"},
   quality : real,
   resources : real,
-  visits : int
+  visits : int, // incomming moves
+  communication : int, // counts communication initiated by migrants here
+  moves : int // counts outgoing moves
 )
 
 Information(
@@ -24,7 +26,7 @@ Link(
   type : {"slow", "fast"},
   friction : real,
   distance : real,
-  visits : int
+  visits : int // counts moves going through
 )
 
 InfoLink(
@@ -33,7 +35,9 @@ InfoLink(
 )
 
 
-singleton World()
+singleton World(
+  contacts_made : int
+)
 
 location:Location[1]<->[n]Migrant:migrants // migrants to locations
 destination:Location[1]<->[n]Migrant:incoming // migrants on the move linked to their distination
@@ -59,7 +63,7 @@ qual_exp		: real	:= 0.5
 frict_exp_fast  : real	:= 1.25
 frict_exp_slow  : real	:= 12.5
 p_find_links	: real	 := 0.5
-trust_found_links : real := 0.5
+// trust_found_links : real := 0.5
 p_find_dests	: real	 := 0.3
 trust_travelled	: real	 := 0.8
 speed_expl_stay : real	 := 0.5
@@ -74,11 +78,11 @@ qual_weight_res	: real   := 0.1
 qual_weight_frict : real := 0.1
 
 p_keep_contact 	: real 	:= 0.3
-p_info_mingle	: real	:= 0.3
+// p_info_mingle	: real	:= 0.3
 p_info_contacts	: real	:= 0.3
-p_transfer_info	: real	:= 0.3
+// p_transfer_info	: real	:= 0.3
 n_contacts_max	: int	:= 50
-arr_learn		: real	:= 0.0
+// arr_learn		: real	:= 0.0
 convince		: real	:= 0.5 // change doubt into belief
 convert			: real	:= 0.1 // change belief into other belief
 confuse			: real	:= 0.3 // change belief into doubt
@@ -119,6 +123,7 @@ Migrant.knowledge_about(?loc : Location) : Information :=
  */
 // (== exchange_info)
 Migrant.exchange_info(?other : Migrant) ->
+  ego.location.communication += 1
   ?egoExclusive := ego.knowledge.filter(!?other.knows(alter.subject))
   ?otherExclusive := ?other.knowledge.filter(!ego.knows(alter.subject))
   ?otherArrived := ?other.location.type = "exit"
@@ -389,6 +394,7 @@ Migrant
      ?link.visits += 1
      ego.capital -= ego.move_cost(ego.destination)
      ego.steps += 1
+     ego.location.moves += 1
 
 // people in transit arrive at their destination
 Migrant
@@ -404,12 +410,13 @@ World
   | true
   @ rate_dep
   -> ?migrant := new Migrant(capital := ini_capital, in_transit := false)
-     ?migrant.contacts := Migrant.all.random(n_ini_contacts) - [?migrant]
+     ?migrant.contacts := (Migrant.all - [?migrant]).random(n_ini_contacts)
      for each ?other in ?migrant.contacts
        if (?other.contacts.size() < n_contacts_max) then
          ?other.contacts += [?migrant]
        end
      end
+     ego.contacts_made += ?migrant.contacts.size()
      ?migrant.location := Location.all.filter(alter.type = "entry").random()
      ?migrant.location.visits += 1
      ?migrant.explore_at(?migrant.location, speed_expl_stay, true)
