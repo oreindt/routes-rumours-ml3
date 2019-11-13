@@ -168,8 +168,8 @@ Migrant.exchange_info(?other : Migrant) ->
 Migrant.exchange_beliefs(?i1 : Information, ?i2 : Information, ?arrived : bool) ->
   // agent 1 evaluated the information differently, if agent 2 has already arrived (agent 1 definitely did not arrive yet)
   ?convince1 := if (?arrived) then convince^(1 / weight_arr) else convince
-  ?convert1 := if (?arrived) then convert^(1 / weight_arr) else convince
-  ?confuse1 := convince
+  ?convert1 := if (?arrived) then convert^(1 / weight_arr) else convert
+  ?confuse1 := confuse
   ?v2_q_pcv := ego.v_pcv(?i2.quality)
   ?v2_r_pcv := ego.v_pcv(?i2.resources)
   ?t2_q_pcv := ego.t_pcv(?i2.quality_trust)
@@ -178,10 +178,6 @@ Migrant.exchange_beliefs(?i1 : Information, ?i2 : Information, ?arrived : bool) 
   ?v1_r := ego.receive_value(?i1.resources, ?i1.resources_trust, ?v2_r_pcv, ?t2_r_pcv, ?convince1, ?convert1, ?confuse1)
   ?d1_q := ego.receive_doubt(?i1.quality, ?i1.quality_trust, ?v2_q_pcv, ?t2_q_pcv, ?convince1, ?convert1, ?confuse1)
   ?d1_r := ego.receive_doubt(?i1.resources, ?i1.resources_trust, ?v2_r_pcv, ?t2_r_pcv, ?convince1, ?convert1, ?confuse1)
-  ?i1.quality := ?v1_q / (1 - ?d1_q)
-  ?i1.quality_trust := 1 - ?d1_q
-  ?i1.resources := ?v1_r / (1 - ?d1_r)
-  ?i1.resources_trust := 1 - ?d1_r
   // agent 2 does not update their knowledge, if they have arrived
   if (!?arrived) then
     ?v1_q_pcv := ego.v_pcv(?i1.quality)
@@ -192,32 +188,40 @@ Migrant.exchange_beliefs(?i1 : Information, ?i2 : Information, ?arrived : bool) 
     ?v2_r := ego.receive_value(?i2.resources, ?i2.resources_trust, ?v1_r_pcv, ?t1_r_pcv, convince, convert, confuse)
     ?d2_q := ego.receive_doubt(?i2.quality, ?i2.quality_trust, ?v1_q_pcv, ?t1_q_pcv, convince, convert, confuse)
     ?d2_r := ego.receive_doubt(?i2.resources, ?i2.resources_trust, ?v1_r_pcv, ?t1_r_pcv, convince, convert, confuse)
+    // set new values
     ?i2.quality := ?v2_q / (1 - ?d2_q)
     ?i2.quality_trust := 1 - ?d2_q
     ?i2.resources := ?v2_r / (1 - ?d2_r)
     ?i2.resources_trust := 1 - ?d2_r
   end
+  // set new values for i1 only after the calculations were made for i2
+  ?i1.quality := ?v1_q / (1 - ?d1_q)
+  ?i1.quality_trust := 1 - ?d1_q
+  ?i1.resources := ?v1_r / (1 - ?d1_r)
+  ?i1.resources_trust := 1 - ?d1_r
 
 Migrant.exchange_beliefs_link(?i1 : InfoLink, ?i2 : InfoLink, ?arrived : bool) ->
   // agent 1 evaluated the information differently, if agent 2 has already arrived (agent 1 definitely did not arrive yet)
   ?convince1 := if (?arrived) then convince^(1 / weight_arr) else convince
-  ?convert1 := if (?arrived) then convert^(1 / weight_arr) else convince
-  ?confuse1 := convince
+  ?convert1 := if (?arrived) then convert^(1 / weight_arr) else convert
+  ?confuse1 := confuse
   ?v2_pcv := ego.v_pcv(?i2.friction)
   ?t2_pcv := ego.t_pcv(?i2.friction_trust)
   ?v1 := ego.receive_value(?i1.friction, ?i1.friction_trust, ?v2_pcv, ?t2_pcv, ?convince1, ?convert1, ?confuse1)
   ?d1 := ego.receive_doubt(?i1.friction, ?i1.friction_trust, ?v2_pcv, ?t2_pcv, ?convince1, ?convert1, ?confuse1)
-  ?i1.friction := ?v1 / (1 - ?d1)
-  ?i1.friction_trust := 1 - ?d1
   // agent 2 does not update their knowledge, if they have arrived
   if (!?arrived) then
     ?v1_pcv := ego.v_pcv(?i1.friction)
     ?t1_pcv := ego.t_pcv(?i1.friction_trust)
     ?v2 := ego.receive_value(?i2.friction, ?i2.friction_trust, ?v1_pcv, ?t1_pcv, convince, convert, confuse)
     ?d2 := ego.receive_doubt(?i2.friction, ?i2.friction_trust, ?v1_pcv, ?t1_pcv, convince, convert, confuse)
+    // set new values
     ?i2.friction := ?v2 / (1 - ?d2)
     ?i2.friction_trust := 1 - ?d2
   end
+  // set new values for i1 only after the calculations were made for i2
+  ?i1.friction := ?v1 / (1 - ?d1)
+  ?i1.friction_trust := 1 - ?d1
 
 Migrant.receive_value(?v1 : real, ?t1 : real, ?v2_pcv : real, ?t2_pcv : real, ?ci : real, ?ce : real, ?cu : real) : real :=
   ?t * ?d_pcv * ?v + ?d * ?t_pcv * ?ci * ?v_pcv + ?t * ?t_pcv * (1.0 - ?cu * ?dist_pcv) * ((1.0 - ?ce) * ?v + ?ce * ?v_pcv)
@@ -279,7 +283,7 @@ Migrant.explore_at(?loc : Location, ?speed : real, ?allow_indirect : bool) ->
   end
   ?k := ego.knowledge_about(?loc)
   ?k.quality := ego.weighted_average(?k.quality, ?loc.quality, ?speed)
-  ?k.resources := ego.weighted_average(?k.resources, ?loc.quality, ?speed)
+  ?k.resources := ego.weighted_average(?k.resources, ?loc.resources, ?speed)
   ?k.quality_trust := ego.weighted_average(?k.quality_trust, 0.999999, ?speed)
   ?k.resources_trust := ego.weighted_average(?k.resources_trust, 0.999999, ?speed)
 
@@ -379,8 +383,8 @@ Migrant.move_distance() : real :=
 
 // decide to move to a new location
 Migrant
-  | !ego.in_transit && !ego.link_knowledge.filter(ego.location in alter.subject.endpoints).isEmpty()
-  @ 1 // ego.move_rate()
+  | !ego.in_transit // && !ego.link_knowledge.filter(ego.location in alter.subject.endpoints).isEmpty()
+  @ ego.move_rate()
   -> ego.in_transit := true
      ego.destination := ego.decide_destination()
      ?link := ego.location.links.filter((ego.location in alter.endpoints) && (ego.destination in alter.endpoints)).only()
