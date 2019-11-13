@@ -341,30 +341,23 @@ where ?people := ego.contacts
  * MOVING AROUND
  */
 Migrant.move_rate() : real :=
-  if ?knownLinks.isEmpty() || ?qualitySum = 0 then 0
+  if ?relevantLinkKnowledge.isEmpty() || ?qualitySum = 0 then 0
   else if ?hereQuality > 0 then ?expectedQuality / ?hereQuality
   else 1
 where ?relevantLinkKnowledge := ego.link_knowledge.filter(ego.location in alter.subject.endpoints)
-      ?knownLinks := ?relevantLinkKnowledge.collect([alter.subject])
-      ?qualitySum := ?knownLinks.sum(ego.quality_link(alter))
-      ?expectedQuality := ?knownLinks.sum(ego.quality_link(alter) ^ 2.0) / ?qualitySum
+      ?qualitySum := ?relevantLinkKnowledge.sum(ego.quality_link(alter))
+      ?expectedQuality := ?relevantLinkKnowledge.sum(ego.quality_link(alter) ^ 2.0) / ?qualitySum
       ?hereQuality := ego.quality_loc(ego.location)
 
 // (== decide_move)
 Migrant.decide_destination() : Location :=
-  ?knownLinks.weightedRandom(ego.quality_link(alter)).endpoints.filter(alter != ego.location).only()
+  ?relevantLinkKnowledge.weightedRandom(ego.quality_link(alter)).subject.endpoints.filter(alter != ego.location).only()
 where ?relevantLinkKnowledge := ego.link_knowledge.filter(ego.location in alter.subject.endpoints)
-      ?knownLinks := ?relevantLinkKnowledge.collect([alter.subject])
 
 // (== quality for links)
-Migrant.quality_link(?link : Link) : real :=
-  if ?infos.isEmpty() then 0.00001
-  else ego.quality_loc(?other_side) / (1 + ?info.friction * qual_weight_frict)
-where ?other_side := ?link.endpoints.filter(alter != ego.location).only()
-      ?infos := ego.link_knowledge.filter(alter.subject = ?link)
-      ?info := ?infos.only()
-
-
+Migrant.quality_link(?info: InfoLink) : real :=
+  ego.quality_loc(?other_side) / (1 + ?info.friction * qual_weight_frict)
+where ?other_side := ?info.subject.endpoints.filter(alter != ego.location).only()
 
 // (== quality for locations)
 Migrant.quality_loc(?loc : Location) : real :=
@@ -386,8 +379,8 @@ Migrant.move_distance() : real :=
 
 // decide to move to a new location
 Migrant
-  | !ego.in_transit
-  @ ego.move_rate()
+  | !ego.in_transit && !ego.link_knowledge.filter(ego.location in alter.subject.endpoints).isEmpty()
+  @ 1 // ego.move_rate()
   -> ego.in_transit := true
      ego.destination := ego.decide_destination()
      ?link := ego.location.links.filter((ego.location in alter.endpoints) && (ego.destination in alter.endpoints)).only()
