@@ -1,5 +1,5 @@
 import org.jamesii.ml3.experiment.init.IInitialStateBuilder
-import src.main.java.org.jamesii.ml3.{BuildState, FourCity, ThreeCity}
+import src.main.java.org.jamesii.ml3.BuildState
 
 object SmallWorldTests extends App {
 
@@ -64,7 +64,6 @@ object SmallWorldTests extends App {
     startTime = 0
     stopTime = 100 // 500
 
-    // initializeWith(() => new JsonStateBuilder("init50_1.json"))
     initializeWith(() => init)
 
     set("rate_dep" <~ 10) // 20 // number of departures per time step

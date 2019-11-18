@@ -1,5 +1,3 @@
-package org.sessl
-
 import org.jamesii.ml3.experiment.init.JsonStateBuilder
 
 object ExitDistribution extends App {
@@ -7,7 +5,7 @@ object ExitDistribution extends App {
   import sessl._
   import sessl.ml3._
 
-  val experiment = new Experiment with Observation with ParallelExecution with WorldGeneration with CSVOutput with TimeMeasurement {
+  val experiment = new Experiment with Observation with ParallelExecution with CSVOutput with TimeMeasurement {
 
     model = "routes.ml3"
     simulator = NextReactionMethod()
@@ -16,8 +14,7 @@ object ExitDistribution extends App {
     startTime = 0
     stopTime = 100 // 500
 
-    initializeWith(() => new JsonStateBuilder("init50_1.json"))
-
+    initializeWith(() => new JsonStateBuilder("init50.json"))
 
     set("p_find_links" <~ 0.5)
     set("p_find_dests" <~ 0.3)

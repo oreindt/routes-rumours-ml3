@@ -1,5 +1,3 @@
-package org.sessl
-
 import org.apache.commons.math3.random.RandomGenerator
 import org.jamesii.ml3.experiment.init.IInitialStateBuilder
 import org.jamesii.ml3.model.agents.{IAgent, IAgentFactory}

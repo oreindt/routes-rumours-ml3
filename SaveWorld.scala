@@ -1,5 +1,3 @@
-package org.sessl
-
 import org.apache.commons.math3.random.MersenneTwister
 import org.jamesii.ml3.model.Parameters
 import org.jamesii.ml3.model.build.ModelBuilder
