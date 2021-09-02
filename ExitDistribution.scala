@@ -1,4 +1,5 @@
 import org.jamesii.ml3.experiment.init.JsonStateBuilder
+import src.main.java.org.jamesii.ml3.BuildState
 
 object ExitDistribution extends App {
 
@@ -14,7 +15,11 @@ object ExitDistribution extends App {
     startTime = 0
     stopTime = 100 // 500
 
-    initializeWith(() => new JsonStateBuilder("init50.json"))
+    initializeWith(() => new BuildState.ThreeCity)
+
+    set("dist_scale_slow" <~ 10.0)
+    set("dist_scale_fast" <~ 1.0)
+    set("frict_range" <~ 0.5) // probably best to set this to 0 for the tests, otherwise friction is stochastic
 
     set("p_find_links" <~ 0.5)
     set("p_find_dests" <~ 0.3)
